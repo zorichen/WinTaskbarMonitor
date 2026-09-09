@@ -1,0 +1,11 @@
+/bin/
+/build-*/
+/dist/
+/vendor/
+/backups/
+/VALIDATION.md
+/release-validation/
+*.log
+*.pdb
+__pycache__/
+.vs/

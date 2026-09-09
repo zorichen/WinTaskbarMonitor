@@ -1,0 +1,26 @@
+name: Build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build from source
+        shell: powershell
+        run: .\build.ps1
+      - name: Verify executable metadata and icon
+        shell: powershell
+        run: |
+          $assembly = [Reflection.Assembly]::LoadFile((Resolve-Path 'bin\TaskbarMonitor.exe'))
+          if ($assembly.GetName().Version.ToString() -ne '1.0.0.0') { throw 'Unexpected version' }
+          if ('TaskbarMonitor.AppIcon' -notin $assembly.GetManifestResourceNames()) { throw 'Missing icon' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TaskbarMonitor-windows-x64
+          path: bin/
