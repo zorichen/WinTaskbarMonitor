@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 — 2026-09-10
 
 - Optional sign-in startup, visible and controllable in Task Manager's Startup apps.
 - Non-elevated startup launcher with the original multi-resolution native icon; it starts the authorized elevated task after 15 seconds.

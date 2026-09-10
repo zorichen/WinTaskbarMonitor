@@ -20,7 +20,9 @@ if (-not $InnoCompiler -or -not (Test-Path $InnoCompiler)) { throw 'Pass -InnoCo
 & $InnoCompiler "/DStageDir=$stage" "/DOutputDirPath=$dist" (Join-Path $PSScriptRoot 'installer\TaskbarMonitor.iss')
 if($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
 $portableFiles=Get-ChildItem -LiteralPath $stage | Where-Object Name -ne 'startup-registration.json' | Select-Object -ExpandProperty FullName
-Compress-Archive -LiteralPath $portableFiles -DestinationPath (Join-Path $dist 'TaskbarMonitor-1.0.0-Portable-x64.zip') -Force
-$lines=Get-ChildItem $dist -File | Where-Object Extension -in '.exe','.zip' | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()+'  '+$_.Name }
+$portable=Join-Path $dist 'TaskbarMonitor-1.0.1-Portable-x64.zip'
+Compress-Archive -LiteralPath $portableFiles -DestinationPath $portable -Force
+$releaseFiles=Get-Item (Join-Path $dist 'TaskbarMonitor-1.0.1-Setup-x64.exe'),$portable
+$lines=$releaseFiles | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()+'  '+$_.Name }
 $lines | Set-Content -Encoding ascii (Join-Path $dist 'SHA256SUMS.txt')
-Get-ChildItem $dist | Select-Object Name,Length
+$releaseFiles + (Get-Item (Join-Path $dist 'SHA256SUMS.txt')) | Select-Object Name,Length

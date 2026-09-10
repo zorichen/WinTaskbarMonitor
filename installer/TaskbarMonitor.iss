@@ -7,7 +7,7 @@
 [Setup]
 AppId={{57F571DC-767B-4A3A-BCCE-073197E4B8F5}
 AppName=TaskbarMonitor
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=ZoriChen
 AppPublisherURL=https://github.com/zorichen/TaskbarMonitor
 AppSupportURL=https://github.com/zorichen/TaskbarMonitor/issues
@@ -23,7 +23,7 @@ WizardStyle=modern
 SetupIconFile=..\assets\taskbar-monitor.ico
 UninstallDisplayIcon={app}\TaskbarMonitor.exe
 OutputDir={#OutputDirPath}
-OutputBaseFilename=TaskbarMonitor-1.0.0-Setup-x64
+OutputBaseFilename=TaskbarMonitor-1.0.1-Setup-x64
 Compression=lzma2
 SolidCompression=yes
 LicenseFile=..\LICENSE
