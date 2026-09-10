@@ -19,7 +19,8 @@ if (-not $InnoCompiler) {
 if (-not $InnoCompiler -or -not (Test-Path $InnoCompiler)) { throw 'Pass -InnoCompiler with the path to ISCC.exe (Inno Setup 6 or 7).' }
 & $InnoCompiler "/DStageDir=$stage" "/DOutputDirPath=$dist" (Join-Path $PSScriptRoot 'installer\TaskbarMonitor.iss')
 if($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
-Compress-Archive -Path (Join-Path $stage '*') -DestinationPath (Join-Path $dist 'TaskbarMonitor-1.0.0-Portable-x64.zip') -Force
+$portableFiles=Get-ChildItem -LiteralPath $stage | Where-Object Name -ne 'startup-registration.json' | Select-Object -ExpandProperty FullName
+Compress-Archive -LiteralPath $portableFiles -DestinationPath (Join-Path $dist 'TaskbarMonitor-1.0.0-Portable-x64.zip') -Force
 $lines=Get-ChildItem $dist -File | Where-Object Extension -in '.exe','.zip' | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()+'  '+$_.Name }
 $lines | Set-Content -Encoding ascii (Join-Path $dist 'SHA256SUMS.txt')
 Get-ChildItem $dist | Select-Object Name,Length

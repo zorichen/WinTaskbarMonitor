@@ -4,6 +4,12 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 $root=Split-Path $PSScriptRoot -Parent
 $validation=Join-Path $root 'release-validation'
 $install=Join-Path $validation 'installed'
+# Do not replace the real installation's shared Inno Setup uninstall registration.
+$uninstallKey='HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{57F571DC-767B-4A3A-BCCE-073197E4B8F5}_is1'
+$existingInstall=Get-ItemProperty -LiteralPath $uninstallKey -ErrorAction SilentlyContinue
+if ($existingInstall -and $existingInstall.InstallLocation.TrimEnd('\') -ne $install.TrimEnd('\')) {
+    throw 'TaskbarMonitor is already installed outside the validation directory. Run this installer test in a disposable Windows VM.'
+}
 New-Item -ItemType Directory -Path $validation -Force | Out-Null
 $resolvedInstall=[IO.Path]::GetFullPath($install)
 if (-not $resolvedInstall.StartsWith([IO.Path]::GetFullPath($validation)+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Test installation must stay inside validation directory.' }

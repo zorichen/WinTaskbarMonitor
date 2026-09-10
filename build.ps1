@@ -17,4 +17,12 @@ $arguments += $refs | ForEach-Object { '/reference:'+$_ }
 $arguments += Get-ChildItem -LiteralPath $project -Filter '*.cs' | Select-Object -ExpandProperty FullName
 & (Join-Path $framework 'csc.exe') @arguments
 if($LASTEXITCODE -ne 0) { throw 'Build failed.' }
+$startupArguments = @('/nologo','/target:winexe','/platform:x64','/optimize+','/codepage:65001',
+    ('/win32manifest:'+(Join-Path $project 'startup\app.manifest')),('/win32icon:'+$icon),
+    ('/out:'+(Join-Path $output 'TaskbarMonitorStartup.exe')), '/reference:System.dll',
+    '/reference:System.Core.dll','/reference:System.Web.Extensions.dll','/reference:Microsoft.CSharp.dll',
+    (Join-Path $project 'AssemblyInfo.cs'),(Join-Path $project 'startup\TaskbarMonitorStartup.cs'))
+& (Join-Path $framework 'csc.exe') @startupArguments
+if($LASTEXITCODE -ne 0) { throw 'Startup launcher build failed.' }
 Write-Output (Join-Path $output 'TaskbarMonitor.exe')
+Write-Output (Join-Path $output 'TaskbarMonitorStartup.exe')

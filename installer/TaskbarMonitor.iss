@@ -37,10 +37,11 @@ Name: "chinesesimp"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut / 创建桌面快捷方式"; Flags: unchecked
+Name: "startup"; Description: "Start after Windows sign-in (Task Manager startup entry) / 登录后自动启动（可在任务管理器中开关）"; Flags: unchecked
 Name: "pawnio"; Description: "Install signed PawnIO 2.2.0 driver for CPU temperature / 安装官方签名温度驱动"; Flags: unchecked; Check: NeedsPawnIO
 
 [Files]
-Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#StageDir}\*"; DestDir: "{app}"; Excludes: "startup-registration.json"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\TaskbarMonitor"; Filename: "{app}\TaskbarMonitor.exe"
@@ -57,6 +58,26 @@ Filename: "{app}\TaskbarMonitor.exe"; Parameters: "--quit"; Flags: runhidden wai
 var
   DriverNeedsRestart: Boolean;
 
+procedure ConfigureStartup(Enable: Boolean);
+var
+  Parameters: String;
+  ResultCode: Integer;
+begin
+  if Enable then Parameters := '--install-startup'
+  else Parameters := '--remove-startup';
+  if not Exec(ExpandConstant('{app}\TaskbarMonitorStartup.exe'), Parameters, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    RaiseException('Could not run the startup configuration tool. See %LOCALAPPDATA%\TaskbarMonitor\startup-launcher.log.')
+  else if ResultCode <> 0 then
+    RaiseException('Could not configure startup. See %LOCALAPPDATA%\TaskbarMonitor\startup-launcher.log.');
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  { Wait until uninstall is confirmed; cancelling the dialog must preserve startup. }
+  if (CurUninstallStep = usUninstall) and FileExists(ExpandConstant('{app}\TaskbarMonitorStartup.exe')) then
+    ConfigureStartup(False);
+end;
+
 function NeedsPawnIO: Boolean;
 begin
   Result := not RegKeyExists(HKLM64, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO');
@@ -66,6 +87,8 @@ procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
 begin
+  if CurStep = ssPostInstall then
+    ConfigureStartup(WizardIsTaskSelected('startup'));
   if (CurStep = ssPostInstall) and WizardIsTaskSelected('pawnio') and NeedsPawnIO then
   begin
     if not Exec(ExpandConstant('{app}\drivers\PawnIO_setup.exe'), '-install -silent', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
