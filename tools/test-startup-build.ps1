@@ -30,5 +30,5 @@ try {
     $manifest=[Text.Encoding]::UTF8.GetString($bytes)
     if ($manifest -notmatch 'level="asInvoker"') { throw 'Login launcher must not request UAC elevation.' }
 } finally { [StartupBuildResources]::FreeLibrary($module) | Out-Null }
-if ((Get-Item $exe).VersionInfo.FileDescription -ne 'TaskbarMonitor') { throw 'Unexpected Startup apps display name.' }
+if ((Get-Item $exe).VersionInfo.FileDescription -ne 'WinTaskbarMonitor') { throw 'Unexpected Startup apps display name.' }
 'PASS: launcher native icon, display name and asInvoker manifest'

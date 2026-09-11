@@ -6,14 +6,15 @@
 #endif
 [Setup]
 AppId={{57F571DC-767B-4A3A-BCCE-073197E4B8F5}
-AppName=TaskbarMonitor
-AppVersion=1.0.1
+AppName=WinTaskbarMonitor
+AppVersion=1.0.2
 AppPublisher=ZoriChen
-AppPublisherURL=https://github.com/zorichen/TaskbarMonitor
-AppSupportURL=https://github.com/zorichen/TaskbarMonitor/issues
-AppUpdatesURL=https://github.com/zorichen/TaskbarMonitor/releases
-DefaultDirName={autopf}\TaskbarMonitor
-DefaultGroupName=TaskbarMonitor
+AppPublisherURL=https://github.com/zorichen/WinTaskbarMonitor
+AppSupportURL=https://github.com/zorichen/WinTaskbarMonitor/issues
+AppUpdatesURL=https://github.com/zorichen/WinTaskbarMonitor/releases
+DefaultDirName={autopf}\WinTaskbarMonitor
+DefaultGroupName=WinTaskbarMonitor
+UsePreviousGroup=no
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
@@ -23,13 +24,13 @@ WizardStyle=modern
 SetupIconFile=..\assets\taskbar-monitor.ico
 UninstallDisplayIcon={app}\TaskbarMonitor.exe
 OutputDir={#OutputDirPath}
-OutputBaseFilename=TaskbarMonitor-1.0.1-Setup-x64
+OutputBaseFilename=WinTaskbarMonitor-1.0.2-Setup-x64
 Compression=lzma2
 SolidCompression=yes
 LicenseFile=..\LICENSE
 CloseApplications=yes
 RestartApplications=no
-UninstallDisplayName=TaskbarMonitor
+UninstallDisplayName=WinTaskbarMonitor
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -43,13 +44,19 @@ Name: "pawnio"; Description: "Install signed PawnIO 2.2.0 driver for CPU tempera
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Excludes: "startup-registration.json"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[InstallDelete]
+Type: files; Name: "{autoprograms}\TaskbarMonitor\TaskbarMonitor.lnk"
+Type: files; Name: "{autoprograms}\TaskbarMonitor\Uninstall TaskbarMonitor.lnk"
+Type: dirifempty; Name: "{autoprograms}\TaskbarMonitor"
+Type: files; Name: "{autodesktop}\TaskbarMonitor.lnk"
+
 [Icons]
-Name: "{group}\TaskbarMonitor"; Filename: "{app}\TaskbarMonitor.exe"
-Name: "{autodesktop}\TaskbarMonitor"; Filename: "{app}\TaskbarMonitor.exe"; Tasks: desktopicon
-Name: "{group}\Uninstall TaskbarMonitor"; Filename: "{uninstallexe}"
+Name: "{group}\WinTaskbarMonitor"; Filename: "{app}\TaskbarMonitor.exe"
+Name: "{autodesktop}\WinTaskbarMonitor"; Filename: "{app}\TaskbarMonitor.exe"; Tasks: desktopicon
+Name: "{group}\Uninstall WinTaskbarMonitor"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\TaskbarMonitor.exe"; Description: "Launch TaskbarMonitor / 启动任务栏监控"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\TaskbarMonitor.exe"; Description: "Launch WinTaskbarMonitor / 启动任务栏监控"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
 Filename: "{app}\TaskbarMonitor.exe"; Parameters: "--quit"; Flags: runhidden waituntilterminated; RunOnceId: "StopTaskbarMonitor"
@@ -92,7 +99,7 @@ begin
   if (CurStep = ssPostInstall) and WizardIsTaskSelected('pawnio') and NeedsPawnIO then
   begin
     if not Exec(ExpandConstant('{app}\drivers\PawnIO_setup.exe'), '-install -silent', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-      MsgBox('Could not start PawnIO installer. TaskbarMonitor is installed; temperature may be unavailable.', mbError, MB_OK)
+      MsgBox('Could not start PawnIO installer. WinTaskbarMonitor is installed; temperature may be unavailable.', mbError, MB_OK)
     else if ResultCode = 3010 then
       DriverNeedsRestart := True
     else if ResultCode <> 0 then

@@ -146,7 +146,7 @@ internal sealed class MonitorForm : Form
     public MonitorForm(SensorService sensors,Settings settings,bool preview)
     {
         this.sensors=sensors; this.settings=settings; this.preview=preview;
-        Text="TaskbarMonitor · 任务栏监控"; FormBorderStyle=FormBorderStyle.None; ShowInTaskbar=false;
+        Text="WinTaskbarMonitor · 任务栏监控"; FormBorderStyle=FormBorderStyle.None; ShowInTaskbar=false;
         AutoScaleMode=AutoScaleMode.None; DoubleBuffered=true; StartPosition=FormStartPosition.Manual;
         Size=new Size(164,40); Location=new Point(200,200);
         using(Stream iconStream=typeof(Program).Assembly.GetManifestResourceStream("TaskbarMonitor.AppIcon"))

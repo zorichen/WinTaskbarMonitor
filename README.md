@@ -1,6 +1,6 @@
-<p align="center"><img src="assets/icon-256.png" width="96" alt="TaskbarMonitor icon"></p>
+<p align="center"><img src="assets/icon-256.png" width="96" alt="WinTaskbarMonitor icon"></p>
 
-# TaskbarMonitor
+# WinTaskbarMonitor
 
 一个简洁的 Windows 11 任务栏硬件监控工具。贴在天气右侧，用两行显示 CPU 占用率、内存占用率、CPU 温度和硬盘温度。
 
@@ -13,10 +13,10 @@ CPU  50°C       硬盘  50°C
 
 ## 下载与安装
 
-从 [Releases](https://github.com/zorichen/TaskbarMonitor/releases/latest) 下载：
+从 [Releases](https://github.com/zorichen/WinTaskbarMonitor/releases/latest) 下载：
 
-- **TaskbarMonitor-1.0.1-Setup-x64.exe**：安装版，包含开始菜单入口、可选桌面快捷方式、登录自启动选项和卸载程序。
-- **TaskbarMonitor-1.0.1-Portable-x64.zip**：免安装版，解压后运行 `TaskbarMonitor.exe`。运行数据仍存放在用户的 LocalAppData 目录。
+- **WinTaskbarMonitor-1.0.2-Setup-x64.exe**：安装版，包含开始菜单入口、可选桌面快捷方式、登录自启动选项和卸载程序。
+- **WinTaskbarMonitor-1.0.2-Portable-x64.zip**：免安装版，解压后运行 `TaskbarMonitor.exe`。运行数据仍存放在用户的 LocalAppData 目录。
 - **SHA256SUMS.txt**：下载文件的 SHA256 校验值。
 
 系统要求：Windows 11 x64、.NET Framework 4.7.2 或更新版本。初版针对主屏底部、图标居中的任务栏；副屏、垂直任务栏和第三方任务栏替换软件尚未验证。
@@ -34,7 +34,7 @@ CPU  50°C       硬盘  50°C
 
 ### 登录自启动
 
-从 v1.0.1 起，安装包提供可选的 **登录后自动启动**，默认不勾选。安装时启用后，任务管理器 → 启动应用中会出现带应用图标的 **TaskbarMonitor**，可以在那里禁用或重新启用。
+从 v1.0.1 起，安装包提供可选的 **登录后自动启动**，默认不勾选。安装时启用后，任务管理器 → 启动应用中会出现带应用图标的 **WinTaskbarMonitor**，可以在那里禁用或重新启用。
 
 普通权限启动器在登录后等待 15 秒，再调用安装时授权的管理员计划任务读取温度。任务本身没有登录触发器，因此禁用启动应用入口后，不会从另一条路径自动启动。实际出现时间还受 Windows 启动应用调度影响。
 
@@ -75,7 +75,7 @@ CPU  50°C       硬盘  50°C
 
 `--diagnose` 约 7 秒后将结果写入数据目录并退出；`--capture-preview` 启动后保存一次组件自身的渲染图。`status.json` 每 30 秒更新，只保存在本地。诊断包含硬件型号和传感器标识，分享前请检查内容。
 
-卸载 TaskbarMonitor 会移除程序和快捷方式，但保留用户设置与共享的 PawnIO 驱动。需要移除驱动时，请在 Windows“已安装的应用”中单独卸载 PawnIO。
+卸载 WinTaskbarMonitor 会移除程序和快捷方式，但保留用户设置与共享的 PawnIO 驱动。需要移除驱动时，请在 Windows“已安装的应用”中单独卸载 PawnIO。
 
 ## 从源码构建
 
@@ -100,3 +100,7 @@ Windows PowerShell 5.1 或 PowerShell 7：
 ## 许可与参考
 
 项目原创代码使用 [MIT License](LICENSE)。依赖保持各自许可，见 [第三方声明](THIRD-PARTY-NOTICES.md) 和 [参考项目](REFERENCES.md)。LibreHardwareMonitor DLL 保持独立且未经修改。
+
+## 改名升级兼容
+
+1.0.2 将产品名统一为 WinTaskbarMonitor。安装器 AppId、已有安装路径、内部可执行文件 `TaskbarMonitor.exe` / `TaskbarMonitorStartup.exe`、配置目录、单实例信号和计划任务标识保持不变，以原地升级已有安装并保留设置。新安装默认目录为 WinTaskbarMonitor，显示名称、开始菜单、桌面快捷方式和发布包采用新名。

@@ -124,7 +124,7 @@ internal static class StartupProgram
         // Persist the cleanup information before creating either Windows startup resource.
         File.WriteAllText(RegistrationPath, new JavaScriptSerializer().Serialize(registration));
         dynamic definition = service.NewTask(0);
-        definition.RegistrationInfo.Description = "TaskbarMonitor on-demand temperature monitor. Controlled by Task Manager > Startup apps.";
+        definition.RegistrationInfo.Description = "WinTaskbarMonitor on-demand temperature monitor. Controlled by Task Manager > Startup apps.";
         definition.Principal.UserId = sid;
         definition.Principal.LogonType = 3; // TASK_LOGON_INTERACTIVE_TOKEN; no saved password.
         definition.Principal.RunLevel = 1; // TASK_RUNLEVEL_HIGHEST.
@@ -145,7 +145,7 @@ internal static class StartupProgram
         shortcut.TargetPath = LauncherPath;
         shortcut.WorkingDirectory = DirectoryPath;
         shortcut.IconLocation = LauncherPath + ",0";
-        shortcut.Description = "TaskbarMonitor";
+        shortcut.Description = "WinTaskbarMonitor";
         shortcut.Save();
     }
 
