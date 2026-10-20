@@ -29,7 +29,7 @@ function Wait-ForExit([int]$ProcessId) {
 try {
     $devProcess=Get-Process -Name TaskbarMonitor -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $devExe } | Select-Object -First 1
     if($devProcess) { $restoreDev=$true; Run-AndWait $devExe @('--quit'); Wait-ForExit $devProcess.Id }
-    $setup=Join-Path $root 'dist\WinTaskbarMonitor-1.0.2-Setup-x64.exe'
+    $setup=Join-Path $root 'dist\WinTaskbarMonitor-1.0.3-Setup-x64.exe'
     Run-AndWait $setup @('/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/SP-',('/DIR="'+$install+'"'),'/GROUP="TaskbarMonitor Validation"','/TASKS=""',('/LOG="'+(Join-Path $validation 'install.log')+'"'))
     $exe=Join-Path $install 'TaskbarMonitor.exe'
     if(-not (Test-Path $exe)) { throw 'Installed executable missing.' }

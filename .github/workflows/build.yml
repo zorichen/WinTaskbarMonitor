@@ -18,7 +18,7 @@ jobs:
         shell: powershell
         run: |
           $assembly = [Reflection.Assembly]::LoadFile((Resolve-Path 'bin\TaskbarMonitor.exe'))
-          if ($assembly.GetName().Version.ToString() -ne '1.0.2.0') { throw 'Unexpected version' }
+          if ($assembly.GetName().Version.ToString() -ne '1.0.3.0') { throw 'Unexpected version' }
           if ('TaskbarMonitor.AppIcon' -notin $assembly.GetManifestResourceNames()) { throw 'Missing icon' }
           .\tools\test-startup-build.ps1
       - name: Check GPU selection and DPI layout

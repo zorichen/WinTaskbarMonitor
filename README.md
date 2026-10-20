@@ -2,9 +2,9 @@
 
 # WinTaskbarMonitor
 
-一个简洁的 Windows 11 任务栏硬件监控工具。贴在天气右侧，用两行显示 CPU 占用率、内存占用率、CPU 温度和硬盘温度。当前开发版检测到 GPU 后，从左到右显示 CPU、GPU、内存/硬盘三列，支持驱动可识别的外接显卡。
+一个简洁的 Windows 11 任务栏硬件监控工具。贴在天气右侧，用两行显示 CPU 占用率、内存占用率、CPU 温度和硬盘温度。从 v1.0.3 起，检测到 GPU 后，从左到右显示 CPU、GPU、内存/硬盘三列，支持驱动可识别的外接显卡。
 
-GPU 与右键菜单 DPI 改进尚未发布，下面的 1.0.2 下载包及截图对应此前版本。实现、实测与温控曲线调研见 [2026-10-20 开发记录](docs/2026-10-20-gpu-dpi.md)。
+v1.0.3 包含 GPU 与右键菜单 DPI 改进；下方截图保留此前无 GPU 的两列示例。实现、实测与温控曲线调研见 [2026-10-20 开发记录](docs/2026-10-20-gpu-dpi.md)。
 
 ![运行界面](assets/screenshot.png)
 
@@ -13,7 +13,7 @@ CPU  50%        内存  50%
 CPU  50°C       硬盘  50°C
 ```
 
-开发版检测到 GPU 时：
+检测到 GPU 时：
 
 ```text
 CPU  50%    GPU  50%    内存  50%
@@ -24,8 +24,8 @@ CPU  50°C   GPU  50°C   硬盘  50°C
 
 从 [Releases](https://github.com/zorichen/WinTaskbarMonitor/releases/latest) 下载：
 
-- **WinTaskbarMonitor-1.0.2-Setup-x64.exe**：安装版，包含开始菜单入口、可选桌面快捷方式、登录自启动选项和卸载程序。
-- **WinTaskbarMonitor-1.0.2-Portable-x64.zip**：免安装版，解压后运行 `TaskbarMonitor.exe`。运行数据仍存放在用户的 LocalAppData 目录。
+- **WinTaskbarMonitor-1.0.3-Setup-x64.exe**：安装版，包含开始菜单入口、可选桌面快捷方式、登录自启动选项和卸载程序。
+- **WinTaskbarMonitor-1.0.3-Portable-x64.zip**：免安装版，解压后运行 `TaskbarMonitor.exe`。运行数据仍存放在用户的 LocalAppData 目录。
 - **SHA256SUMS.txt**：下载文件的 SHA256 校验值。
 
 系统要求：Windows 11 x64、.NET Framework 4.7.2 或更新版本。初版针对主屏底部、图标居中的任务栏；副屏、垂直任务栏和第三方任务栏替换软件尚未验证。

@@ -7,7 +7,7 @@
 [Setup]
 AppId={{57F571DC-767B-4A3A-BCCE-073197E4B8F5}
 AppName=WinTaskbarMonitor
-AppVersion=1.0.2
+AppVersion=1.0.3
 AppPublisher=ZoriChen
 AppPublisherURL=https://github.com/zorichen/WinTaskbarMonitor
 AppSupportURL=https://github.com/zorichen/WinTaskbarMonitor/issues
@@ -24,7 +24,7 @@ WizardStyle=modern
 SetupIconFile=..\assets\taskbar-monitor.ico
 UninstallDisplayIcon={app}\TaskbarMonitor.exe
 OutputDir={#OutputDirPath}
-OutputBaseFilename=WinTaskbarMonitor-1.0.2-Setup-x64
+OutputBaseFilename=WinTaskbarMonitor-1.0.3-Setup-x64
 Compression=lzma2
 SolidCompression=yes
 LicenseFile=..\LICENSE
