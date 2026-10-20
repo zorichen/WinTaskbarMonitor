@@ -42,7 +42,10 @@ internal static class Program
         {
             Directory.CreateDirectory(Home);
             CapturePreview=args.Contains("--capture-preview");
-            try { Native.SetProcessDpiAwarenessContext(new IntPtr(-4)); } catch {}
+            // Let WinForms initialize PerMonitorV2 from the generated application config.
+            // Setting only the Win32 process context does not enable ToolStrip DPI fixes.
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
             if(args.Contains("--quit")) { try { using(var signal=EventWaitHandle.OpenExisting("Local\\ZoriTaskbarMonitorQuit")) signal.Set(); } catch(WaitHandleCannotBeOpenedException) {} return; }
             if(args.Contains("--diagnose")) { Diagnose(); return; }
             bool created;
@@ -50,8 +53,6 @@ internal static class Program
             {
                 if(!created) return;
                 QuitSignal=new EventWaitHandle(false,EventResetMode.AutoReset,"Local\\ZoriTaskbarMonitorQuit");
-                Application.EnableVisualStyles();
-                Application.SetCompatibleTextRenderingDefault(false);
                 using(SensorService sensors=new SensorService(Settings.Load().LoadIntervalMs,Settings.Load().TemperatureIntervalMs))
                     Application.Run(new MonitorContext(sensors,Settings.Load(),args.Contains("--preview")));
                 QuitSignal.Dispose();
@@ -132,6 +133,7 @@ internal sealed class MonitorForm : Form
     private Font labelFont,valueFont;
     private Color labelColor,valueColor;
     private string[] values={"—","—","—","—"};
+    private int columns=2;
     private IntPtr taskbar;
     private float scale=1;
     private bool light,closing;
@@ -170,7 +172,10 @@ internal sealed class MonitorForm : Form
     }
     private void BuildMenu()
     {
+        menu.ShowImageMargin=false;
+        menu.Font=SystemFonts.MenuFont;
         menu.Items.Add("查看读数和资源占用",null,delegate { ShowDetails(); });
+        menu.Items.Add("重新检测显卡",null,delegate { sensors.RefreshGpu(); });
         menu.Items.Add("保存诊断报告",null,delegate { SaveStatus(); });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("向左微调 4 像素",null,delegate { settings.LeftOffset-=4; settings.Save(); Place(); });
@@ -225,7 +230,13 @@ internal sealed class MonitorForm : Form
     }
     private void Place()
     {
-        if(preview) return;
+        if(preview)
+        {
+            float previewScale=Math.Max(1,Native.GetDpiForWindow(Handle)/96f);
+            if(Math.Abs(previewScale-scale)>0.01) { scale=previewScale; RebuildFonts(); }
+            ClientSize=new Size((int)(WidgetWidth*scale),(int)(38*scale));
+            return;
+        }
         IntPtr current=Native.FindWindow("Shell_TrayWnd",null);
         if(current==IntPtr.Zero) { if(Visible) Hide(); return; }
         Native.Rect rect; if(!Native.GetWindowRect(current,out rect) || rect.Width<rect.Height) { Hide(); return; }
@@ -241,7 +252,7 @@ internal sealed class MonitorForm : Form
         float dpi=Native.GetDpiForWindow(taskbar)/96f;
         if(dpi<1) dpi=1;
         if(Math.Abs(dpi-scale)>0.01) { scale=dpi; RebuildFonts(); }
-        int width=(int)(168*scale),height=(int)(38*scale);
+        int width=(int)(WidgetWidth*scale),height=(int)(38*scale);
         int weather=detectedWeatherRight;
         if(weather<0) { weather=(int)(settings.WeatherWidth*scale); placementSource="预留天气宽度（可右键微调）"; }
         else placementSource="天气按钮边界";
@@ -256,6 +267,7 @@ internal sealed class MonitorForm : Form
             placed=desired;
         }
     }
+    private int WidgetWidth { get { return columns==3?252:168; } }
     private static string Format(double? value,string unit) { return value.HasValue?Math.Round(value.Value).ToString("0")+unit:"—"; }
     private void Tick()
     {
@@ -263,35 +275,43 @@ internal sealed class MonitorForm : Form
         Place();
         if(++ticks%30==0) { LocateWeather(); UpdateTheme(false); SaveStatus(); }
         Readings reading=sensors.Snapshot();
-        string[] next={Format(reading.Cpu,"%"),Format(reading.Memory,"%"),Format(reading.CpuTemp,"°C"),Format(reading.DiskTemp,"°C")};
-        for(int index=0;index<4;index++) if(next[index]!=values[index]) { values[index]=next[index]; Invalidate(Cell(index)); }
-        string hint="CPU："+next[0]+"　内存："+next[1]+"\nCPU："+next[2]+"　硬盘："+next[3]+"\n"+reading.CpuSensor+"\n"+reading.DiskSensor;
+        bool hasGpu=reading.Gpus.Length>0;
+        string[] next=hasGpu
+            ? new [] {Format(reading.Cpu,"%"),Format(reading.GpuLoad,"%"),Format(reading.Memory,"%"),Format(reading.CpuTemp,"°C"),Format(reading.GpuTemp,"°C"),Format(reading.DiskTemp,"°C")}
+            : new [] {Format(reading.Cpu,"%"),Format(reading.Memory,"%"),Format(reading.CpuTemp,"°C"),Format(reading.DiskTemp,"°C")};
+        if(next.Length!=values.Length) { columns=hasGpu?3:2; values=next; Place(); Invalidate(); }
+        else for(int index=0;index<next.Length;index++) if(next[index]!=values[index]) { values[index]=next[index]; Invalidate(Cell(index)); }
+        string hint="CPU："+Format(reading.Cpu,"%")+"　内存："+Format(reading.Memory,"%")+"\nCPU："+Format(reading.CpuTemp,"°C")+"　硬盘："+Format(reading.DiskTemp,"°C")+"\n"+reading.CpuSensor+"\n"+reading.DiskSensor;
+        if(hasGpu) hint+="\nGPU："+Format(reading.GpuTemp,"°C")+"　"+reading.GpuSensor;
         if(!string.IsNullOrEmpty(reading.Error)) hint+="\n"+reading.Error;
         tooltip.SetToolTip(this,hint);
-        tray.Text=("CPU "+next[0]+" 内存 "+next[1]+"\nCPU "+next[2]+" 硬盘 "+next[3]);
+        string trayText="CPU "+Format(reading.Cpu,"%")+" RAM "+Format(reading.Memory,"%")+"\nCPU "+Format(reading.CpuTemp,"°C")+" SSD "+Format(reading.DiskTemp,"°C");
+        if(hasGpu) trayText+=" GPU "+Format(reading.GpuTemp,"°C");
+        tray.Text=trayText.Length>63?trayText.Substring(0,63):trayText;
         if(ticks==3) { SaveStatus(); if(Program.CapturePreview) using(Bitmap image=new Bitmap(Width,Height)) { DrawToBitmap(image,new Rectangle(0,0,Width,Height)); image.Save(Path.Combine(Program.Home,"widget-preview.png"),System.Drawing.Imaging.ImageFormat.Png); } }
     }
     private Rectangle Cell(int index)
     {
-        int col=index%2,row=index/2;
-        return new Rectangle((int)((col==0?4:96)*scale),(int)(row*19*scale),(int)(68*scale),(int)(19*scale));
+        int col=index%columns,row=index/columns;
+        int x=columns==3?4+col*84:(col==0?4:96);
+        return new Rectangle((int)(x*scale),(int)(row*19*scale),(int)((columns==3?76:68)*scale),(int)(19*scale));
     }
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e); if(labelFont==null) return;
         e.Graphics.TextRenderingHint=TextRenderingHint.AntiAliasGridFit;
-        string[] labels={"CPU","内存","CPU","硬盘"};
+        string[] labels=columns==3?new [] {"CPU","GPU","内存","CPU","GPU","硬盘"}:new [] {"CPU","内存","CPU","硬盘"};
         using(Brush labelsBrush=new SolidBrush(labelColor)) using(Brush valuesBrush=new SolidBrush(valueColor))
         using(StringFormat left=new StringFormat(StringFormat.GenericTypographic))
         using(StringFormat valueFormat=new StringFormat(StringFormat.GenericTypographic))
         {
             left.LineAlignment=valueFormat.LineAlignment=StringAlignment.Center;
             left.FormatFlags=valueFormat.FormatFlags=StringFormatFlags.NoWrap;
-            for(int i=0;i<4;i++)
+            for(int i=0;i<values.Length;i++)
             {
                 Rectangle cell=Cell(i);
                 // Keep each label/value pair tight and reserve the wider gap between columns.
-                RectangleF valueBounds=new RectangleF(cell.X+30*scale,cell.Y,38*scale,cell.Height);
+                RectangleF valueBounds=new RectangleF(cell.X+30*scale,cell.Y,(columns==3?46:38)*scale,cell.Height);
                 e.Graphics.DrawString(labels[i],labelFont,labelsBrush,cell,left);
                 e.Graphics.DrawString(values[i],valueFont,valuesBrush,valueBounds,valueFormat);
             }
@@ -310,7 +330,7 @@ internal sealed class MonitorForm : Form
     {
         Readings r=sensors.Snapshot(); SaveStatus();
         using(Process p=Process.GetCurrentProcess())
-            MessageBox.Show("CPU 占用 "+Format(r.Cpu,"%")+"    内存占用 "+Format(r.Memory,"%")+"\nCPU 温度 "+Format(r.CpuTemp,"°C")+"    硬盘温度 "+Format(r.DiskTemp,"°C")+"\n\n"+r.CpuSensor+"\n"+r.DiskSensor+"\n\n占用率间隔："+settings.LoadIntervalMs+" ms\n温度间隔："+settings.TemperatureIntervalMs+" ms\n小组件工作集："+(p.WorkingSet64/1048576.0).ToString("F1")+" MiB\n\n"+r.Error,"任务栏监控",MessageBoxButtons.OK,MessageBoxIcon.Information);
+            MessageBox.Show("CPU 占用 "+Format(r.Cpu,"%")+"    内存占用 "+Format(r.Memory,"%")+"\nCPU 温度 "+Format(r.CpuTemp,"°C")+"    硬盘温度 "+Format(r.DiskTemp,"°C")+"\n\n"+r.CpuSensor+"\n"+r.DiskSensor+"\n\n"+r.GpuSensor+"\n"+string.Join("\n",r.Gpus.Select(g=>g.Name+" ["+g.Id+"]："+Format(g.Temperature,"°C")+" / "+Format(g.Load,"%")))+"\n\n占用率间隔："+settings.LoadIntervalMs+" ms\n温度间隔："+settings.TemperatureIntervalMs+" ms\n小组件工作集："+(p.WorkingSet64/1048576.0).ToString("F1")+" MiB\n\n"+r.Error,"任务栏监控",MessageBoxButtons.OK,MessageBoxIcon.Information);
     }
     protected override void Dispose(bool disposing)
     {

@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Runtime.Versioning;
+[assembly: TargetFramework(".NETFramework,Version=v4.7.2")]
 [assembly: AssemblyTitle("WinTaskbarMonitor")]
 [assembly: AssemblyDescription("A compact two-row Windows taskbar hardware monitor")]
 [assembly: AssemblyCompany("ZoriChen")]
