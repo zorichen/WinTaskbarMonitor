@@ -6,14 +6,14 @@
 #endif
 [Setup]
 AppId={{57F571DC-767B-4A3A-BCCE-073197E4B8F5}
-AppName=WinTaskbarMonitor
-AppVersion=1.0.3
+AppName=黑皮win助手
+AppVersion=1.1.0
 AppPublisher=ZoriChen
-AppPublisherURL=https://github.com/zorichen/WinTaskbarMonitor
-AppSupportURL=https://github.com/zorichen/WinTaskbarMonitor/issues
-AppUpdatesURL=https://github.com/zorichen/WinTaskbarMonitor/releases
-DefaultDirName={autopf}\WinTaskbarMonitor
-DefaultGroupName=WinTaskbarMonitor
+AppPublisherURL=https://github.com/zorichen/ZCWinAssistant
+AppSupportURL=https://github.com/zorichen/ZCWinAssistant/issues
+AppUpdatesURL=https://github.com/zorichen/ZCWinAssistant/releases
+DefaultDirName={autopf}\ZCWinAssistant
+DefaultGroupName=黑皮win助手
 UsePreviousGroup=no
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
@@ -24,13 +24,13 @@ WizardStyle=modern
 SetupIconFile=..\assets\taskbar-monitor.ico
 UninstallDisplayIcon={app}\TaskbarMonitor.exe
 OutputDir={#OutputDirPath}
-OutputBaseFilename=WinTaskbarMonitor-1.0.3-Setup-x64
+OutputBaseFilename=ZCWinAssistant-1.1.0-Setup-x64
 Compression=lzma2
 SolidCompression=yes
 LicenseFile=..\LICENSE
 CloseApplications=yes
 RestartApplications=no
-UninstallDisplayName=WinTaskbarMonitor
+UninstallDisplayName=黑皮win助手
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -49,14 +49,18 @@ Type: files; Name: "{autoprograms}\TaskbarMonitor\TaskbarMonitor.lnk"
 Type: files; Name: "{autoprograms}\TaskbarMonitor\Uninstall TaskbarMonitor.lnk"
 Type: dirifempty; Name: "{autoprograms}\TaskbarMonitor"
 Type: files; Name: "{autodesktop}\TaskbarMonitor.lnk"
+Type: files; Name: "{autoprograms}\WinTaskbarMonitor\WinTaskbarMonitor.lnk"
+Type: files; Name: "{autoprograms}\WinTaskbarMonitor\Uninstall WinTaskbarMonitor.lnk"
+Type: dirifempty; Name: "{autoprograms}\WinTaskbarMonitor"
+Type: files; Name: "{autodesktop}\WinTaskbarMonitor.lnk"
 
 [Icons]
-Name: "{group}\WinTaskbarMonitor"; Filename: "{app}\TaskbarMonitor.exe"
-Name: "{autodesktop}\WinTaskbarMonitor"; Filename: "{app}\TaskbarMonitor.exe"; Tasks: desktopicon
-Name: "{group}\Uninstall WinTaskbarMonitor"; Filename: "{uninstallexe}"
+Name: "{group}\黑皮win助手"; Filename: "{app}\TaskbarMonitorStartup.exe"; Parameters: "--show"
+Name: "{autodesktop}\黑皮win助手"; Filename: "{app}\TaskbarMonitorStartup.exe"; Parameters: "--show"; Tasks: desktopicon
+Name: "{group}\卸载 黑皮win助手"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\TaskbarMonitor.exe"; Description: "Launch WinTaskbarMonitor / 启动任务栏监控"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\TaskbarMonitor.exe"; Parameters: "--show"; Description: "启动黑皮win助手"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
 Filename: "{app}\TaskbarMonitor.exe"; Parameters: "--quit"; Flags: runhidden waituntilterminated; RunOnceId: "StopTaskbarMonitor"

@@ -1,6 +1,22 @@
 <p align="center"><img src="assets/icon-256.png" width="96" alt="WinTaskbarMonitor icon"></p>
 
-# WinTaskbarMonitor
+# 黑皮win助手
+
+GitHub 项目名：**ZCWinAssistant**（原 WinTaskbarMonitor）。
+
+1.1.0 将任务栏硬件监控与指定程序英文输入锁整合到同一个进程、托盘和设置窗口。
+
+- 双击托盘或桌面「黑皮win助手」打开设置；侧栏分为「硬件监控」「英文输入锁」「常规设置」。
+- 任务栏组件和托盘共用四项右键菜单：打开黑皮win助手、显示任务栏监控、启用英文输入锁、退出黑皮win助手。两个功能开关显示勾选状态。
+- 英文锁按完整 EXE 路径匹配，只对指定前台程序请求美式键盘；其他软件不受规则控制。100 ms 检查、至少 250 ms 间隔纠正，目标拒绝请求时显示失败，不保证零延迟禁止切换。
+- 沿用 `%LOCALAPPDATA%\EnglishInputLock\settings.xml` 的已有规则和 `%LOCALAPPDATA%\TaskbarMonitor\settings.json` 的监控设置，不删除原配置。停用旧英文输入锁的独立进程和 Run 启动项后使用统一助手。
+- 保留监控的管理员温度采集和原登录启动任务；只有一个托盘。关闭设置窗口会继续运行两项功能，点「退出助手」才全部停止。
+- 设置窗口默认 **960×680**、最小 **860×600**、最大 **1200×860**，均为 96 DPI 逻辑像素的窗口外框尺寸；按当前显示器 DPI 换算，同时限制在工作区内并留 24 逻辑像素余量。屏幕不足时工作区优先，页内提供滚动。列表可滚动，路径列可水平滚动。
+- 内部 EXE、安装身份与数据目录保持兼容名称，不需要改游戏存档、画质或全局输入法。
+
+构建仍使用下文命令；1.1.0 为整合版本源码，尚未发布二进制 Release。下文下载文件名和旧截图对应已发布的 1.0.3 监控版本。
+
+详情见 [整合与尺寸约定](docs/2026-10-23-heipi-assistant.md)。
 
 一个简洁的 Windows 11 任务栏硬件监控工具。贴在天气右侧，用两行显示 CPU 占用率、内存占用率、CPU 温度和硬盘温度。从 v1.0.3 起，检测到 GPU 后，从左到右显示 CPU、GPU、内存/硬盘三列，支持驱动可识别的外接显卡。
 
@@ -22,7 +38,7 @@ CPU  50°C   GPU  50°C   硬盘  50°C
 
 ## 下载与安装
 
-从 [Releases](https://github.com/zorichen/WinTaskbarMonitor/releases/latest) 下载：
+从 [Releases](https://github.com/zorichen/ZCWinAssistant/releases/latest) 下载：
 
 - **WinTaskbarMonitor-1.0.3-Setup-x64.exe**：安装版，包含开始菜单入口、可选桌面快捷方式、登录自启动选项和卸载程序。
 - **WinTaskbarMonitor-1.0.3-Portable-x64.zip**：免安装版，解压后运行 `TaskbarMonitor.exe`。运行数据仍存放在用户的 LocalAppData 目录。
@@ -36,8 +52,8 @@ CPU  50°C   GPU  50°C   硬盘  50°C
 
 ## 使用
 
-- 右键小组件或托盘图标：查看传感器来源、重新检测显卡、微调左右位置、保存诊断报告或退出。
-- 双击：查看详细读数和小组件内存占用。
+- 右键小组件或托盘图标：打开助手、开关任务栏显示、开关英文输入锁或退出。
+- 双击：打开统一设置；传感器来源、显卡检测和位置微调位于硬件监控页面。
 - 自动适应系统浅色/深色主题以及屏幕缩放。
 - 不上传遥测数据。
 
@@ -118,5 +134,7 @@ Windows PowerShell 5.1 或 PowerShell 7：
 项目原创代码使用 [MIT License](LICENSE)。依赖保持各自许可，见 [第三方声明](THIRD-PARTY-NOTICES.md) 和 [参考项目](REFERENCES.md)。LibreHardwareMonitor DLL 保持独立且未经修改。
 
 ## 改名升级兼容
+
+1.1.0 将 GitHub 项目改为 ZCWinAssistant，显示名称为黑皮win助手。安装器使用原 AppId 原地升级，更新 Windows 安装记录并清理旧监控快捷方式，保留原安装路径、用户配置和登录启动设置（安装时勾选登录启动）。新安装默认目录为 ZCWinAssistant。独立英文输入锁若曾手工安装，可停用其 Run 项并移除旧程序目录；`%LOCALAPPDATA%\EnglishInputLock` 是整合版继续使用的配置目录，应保留。
 
 1.0.2 将产品名统一为 WinTaskbarMonitor。安装器 AppId、已有安装路径、内部可执行文件 `TaskbarMonitor.exe` / `TaskbarMonitorStartup.exe`、配置目录、单实例信号和计划任务标识保持不变，以原地升级已有安装并保留设置。新安装默认目录为 WinTaskbarMonitor，显示名称、开始菜单、桌面快捷方式和发布包采用新名。

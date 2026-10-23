@@ -1,4 +1,4 @@
-param([switch]$Hardware, [switch]$BuildOnly)
+﻿param([switch]$Hardware, [switch]$BuildOnly)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $output=Join-Path $root 'bin'
@@ -12,6 +12,7 @@ $arguments=@('/nologo','/target:exe','/platform:x64','/codepage:65001','/main:Mo
 $arguments+=$refs | ForEach-Object { '/reference:'+$_ }
 $arguments+=Get-ChildItem -LiteralPath $root -Filter '*.cs' | Select-Object -ExpandProperty FullName
 $arguments+=Join-Path $PSScriptRoot 'MonitorChecks.cs'
+$arguments+=Join-Path $PSScriptRoot 'InputChecks.cs'
 & (Join-Path $framework 'csc.exe') @arguments
 if($LASTEXITCODE -ne 0) { throw 'Check build failed.' }
 Copy-Item -LiteralPath (Join-Path $output 'TaskbarMonitor.exe.config') -Destination ($exe+'.config')

@@ -28,7 +28,8 @@ internal static class StartupProgram
         {
             if (args.Length == 1 && args[0] == "--install-startup") Install();
             else if (args.Length == 1 && args[0] == "--remove-startup") Remove();
-            else if (args.Length == 0) Launch();
+            else if (args.Length == 0) Launch(false);
+            else if (args.Length == 1 && args[0] == "--show") Launch(true);
             else throw new ArgumentException("Use --install-startup, --remove-startup, or no arguments to launch.");
             Log("Success: " + (args.Length == 0 ? "launch" : args[0]));
             return 0;
@@ -124,7 +125,7 @@ internal static class StartupProgram
         // Persist the cleanup information before creating either Windows startup resource.
         File.WriteAllText(RegistrationPath, new JavaScriptSerializer().Serialize(registration));
         dynamic definition = service.NewTask(0);
-        definition.RegistrationInfo.Description = "WinTaskbarMonitor on-demand temperature monitor. Controlled by Task Manager > Startup apps.";
+        definition.RegistrationInfo.Description = "黑皮win助手：硬件监控与英文输入锁。由任务管理器的启动应用入口控制。";
         definition.Principal.UserId = sid;
         definition.Principal.LogonType = 3; // TASK_LOGON_INTERACTIVE_TOKEN; no saved password.
         definition.Principal.RunLevel = 1; // TASK_RUNLEVEL_HIGHEST.
@@ -145,7 +146,7 @@ internal static class StartupProgram
         shortcut.TargetPath = LauncherPath;
         shortcut.WorkingDirectory = DirectoryPath;
         shortcut.IconLocation = LauncherPath + ",0";
-        shortcut.Description = "WinTaskbarMonitor";
+        shortcut.Description = "黑皮win助手";
         shortcut.Save();
     }
 
@@ -163,13 +164,21 @@ internal static class StartupProgram
         File.Delete(RegistrationPath);
     }
 
-    private static void Launch()
+    private static void Launch(bool show)
     {
+        if(show) {
+            string home=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"TaskbarMonitor");
+            Directory.CreateDirectory(home);
+            File.WriteAllText(Path.Combine(home,"show-assistant.request"),DateTime.UtcNow.ToString("o"));
+        }
         StartupRegistration registration = ReadRegistration();
-        if (registration == null) throw new InvalidOperationException("Startup has not been configured for this installation.");
+        if (registration == null) {
+            if(show) { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(MonitorPath,"--show") { UseShellExecute=true }); return; }
+            throw new InvalidOperationException("Startup has not been configured for this installation.");
+        }
         using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
             if (identity.User.Value != registration.UserSid) throw new UnauthorizedAccessException("Startup belongs to another Windows account.");
-        Thread.Sleep(15000);
+        if(!show) Thread.Sleep(15000);
         dynamic task = FindTask(Scheduler().GetFolder("\\"), registration.TaskName);
         if (task == null) throw new InvalidOperationException("The startup task is missing. Re-run the installer to repair it.");
         CheckTask(task);

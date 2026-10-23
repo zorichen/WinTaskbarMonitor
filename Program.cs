@@ -15,6 +15,7 @@ internal sealed class Settings
 {
     public int LoadIntervalMs=1000, TemperatureIntervalMs=5000, LeftOffset=0;
     public int WeatherWidth=160;
+    public bool WidgetVisible=true;
     public static readonly string FilePath=Path.Combine(Program.Home,"settings.json");
     public static Settings Load()
     {
@@ -36,6 +37,7 @@ internal static class Program
     internal static readonly string Home=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"TaskbarMonitor");
     internal static bool CapturePreview;
     internal static EventWaitHandle QuitSignal;
+    internal static readonly string ShowRequest=Path.Combine(Home,"show-assistant.request");
     [STAThread] private static void Main(string[] args)
     {
         try
@@ -48,6 +50,7 @@ internal static class Program
             Application.SetCompatibleTextRenderingDefault(false);
             if(args.Contains("--quit")) { try { using(var signal=EventWaitHandle.OpenExisting("Local\\ZoriTaskbarMonitorQuit")) signal.Set(); } catch(WaitHandleCannotBeOpenedException) {} return; }
             if(args.Contains("--diagnose")) { Diagnose(); return; }
+            if(args.Contains("--show")) File.WriteAllText(ShowRequest,DateTime.UtcNow.ToString("o"));
             bool created;
             using(Mutex mutex=new Mutex(true,"Local\\ZoriTaskbarMonitor",out created))
             {
@@ -98,14 +101,32 @@ internal sealed class MonitorContext : ApplicationContext
     private readonly Settings settings;
     private readonly bool preview;
     private readonly System.Windows.Forms.Timer watcher=new System.Windows.Forms.Timer();
-    internal MonitorContext(SensorService sensors,Settings settings,bool preview)
+    private int runtimeTicks;
+    private string lastShowRequest="",showError="";
+    private readonly string showRequestPath,runtimeRoot;
+    internal MonitorContext(SensorService sensors,Settings settings,bool preview,string testShowPath=null,string testRuntimeRoot=null)
     {
+        showRequestPath=testShowPath??Program.ShowRequest; runtimeRoot=testRuntimeRoot??Program.Home;
         this.sensors=sensors; this.settings=settings; this.preview=preview;
+        assistant=new AssistantForm(sensors,settings);
+        assistant.ExitRequested+=delegate { ExitThread(); };
+        assistant.LayoutChanged+=delegate { if(form!=null && !form.IsDisposed) form.RefreshPlacement(); };
         CreateForm();
         watcher.Interval=1000;
         watcher.Tick+=delegate {
             if(Program.QuitSignal.WaitOne(0)) { ExitThread(); return; }
+            try {
+                string request=File.ReadAllText(showRequestPath);
+                if(request!=lastShowRequest) { assistant.ShowMain(-1); lastShowRequest=request; showError=""; }
+            } catch(FileNotFoundException) {} catch(DirectoryNotFoundException) {} catch(Exception ex) { showError=ex.ToString(); }
             if(form.IsDisposed || !form.IsHandleCreated || !Native.IsWindow(form.Handle)) { if(!form.IsDisposed) form.Dispose(); CreateForm(); }
+            if(++runtimeTicks%5==0) {
+                try {
+                    var r=sensors.Snapshot();
+                    var record=new { TimeUtc=DateTime.UtcNow.ToString("o"), ProcessId=Process.GetCurrentProcess().Id, IsAdmin=Program.Admin, r.Cpu,r.CpuTemp,r.GpuLoad,r.GpuTemp,r.Memory,r.DiskTemp,r.CpuSensor,r.DiskSensor,r.Error,InputStatus=assistant.InputStatus,InputEnabled=assistant.InputEnabled,InputFile=EnglishInputLock.Store.FileName,WidgetVisible=settings.WidgetVisible,SettingsVisible=assistant.Visible,ShowError=showError,ShowRequestPath=showRequestPath };
+                    File.WriteAllText(Path.Combine(runtimeRoot,"assistant-runtime.json"),new JavaScriptSerializer().Serialize(record));
+                } catch(Exception ex) { try { File.WriteAllText(Path.Combine(runtimeRoot,"assistant-runtime-error.txt"),ex.ToString()); } catch {} }
+            }
         };
         watcher.Start();
     }
@@ -113,15 +134,22 @@ internal sealed class MonitorContext : ApplicationContext
     {
         form=new MonitorForm(sensors,settings,preview);
         form.ExitRequested+=delegate { ExitThread(); };
+        form.SettingsRequested+=delegate(int tab) { assistant.ShowMain(tab); };
+        form.InputLockEnabled=()=>assistant.InputEnabled;
+        form.InputLockToggled+=delegate(bool value) { assistant.InputEnabled=value; };
         form.Show();
     }
-    protected override void ExitThreadCore() { watcher.Stop(); if(form!=null) form.Dispose(); base.ExitThreadCore(); }
-    protected override void Dispose(bool disposing) { if(disposing) { watcher.Dispose(); if(form!=null) form.Dispose(); } base.Dispose(disposing); }
+    private AssistantForm assistant;
+    protected override void ExitThreadCore() { watcher.Stop(); if(form!=null) form.Dispose(); if(assistant!=null) assistant.Dispose(); base.ExitThreadCore(); }
+    protected override void Dispose(bool disposing) { if(disposing) { watcher.Dispose(); if(form!=null) form.Dispose(); if(assistant!=null) assistant.Dispose(); } base.Dispose(disposing); }
 }
 
 internal sealed class MonitorForm : Form
 {
     internal event Action ExitRequested;
+    internal event Action<int> SettingsRequested;
+    internal Func<bool> InputLockEnabled;
+    internal event Action<bool> InputLockToggled;
     private readonly SensorService sensors;
     private readonly Settings settings;
     private readonly bool preview;
@@ -130,6 +158,7 @@ internal sealed class MonitorForm : Form
     private readonly NotifyIcon tray=new NotifyIcon();
     private readonly Icon appIcon;
     private readonly ContextMenuStrip menu=new ContextMenuStrip();
+    private Font menuFont;
     private Font labelFont,valueFont;
     private Color labelColor,valueColor;
     private string[] values={"—","—","—","—"};
@@ -148,16 +177,16 @@ internal sealed class MonitorForm : Form
     public MonitorForm(SensorService sensors,Settings settings,bool preview)
     {
         this.sensors=sensors; this.settings=settings; this.preview=preview;
-        Text="WinTaskbarMonitor · 任务栏监控"; FormBorderStyle=FormBorderStyle.None; ShowInTaskbar=false;
+        Text="黑皮win助手 · 任务栏监控"; FormBorderStyle=FormBorderStyle.None; ShowInTaskbar=false;
         AutoScaleMode=AutoScaleMode.None; DoubleBuffered=true; StartPosition=FormStartPosition.Manual;
         Size=new Size(164,40); Location=new Point(200,200);
         using(Stream iconStream=typeof(Program).Assembly.GetManifestResourceStream("TaskbarMonitor.AppIcon"))
             appIcon=new Icon(iconStream,SystemInformation.SmallIconSize);
         Icon=appIcon;
         BuildMenu(); ContextMenuStrip=menu;
-        tray.Icon=appIcon; tray.Text="任务栏监控"; tray.ContextMenuStrip=menu; tray.Visible=true;
-        tray.DoubleClick+=delegate { ShowDetails(); };
-        MouseDoubleClick+=delegate(object sender,MouseEventArgs e) { if(e.Button==MouseButtons.Left) ShowDetails(); };
+        tray.Icon=appIcon; tray.Text="黑皮win助手"; tray.ContextMenuStrip=menu; tray.Visible=true;
+        tray.DoubleClick+=delegate { if(SettingsRequested!=null) SettingsRequested(0); };
+        MouseDoubleClick+=delegate(object sender,MouseEventArgs e) { if(e.Button==MouseButtons.Left && SettingsRequested!=null) SettingsRequested(0); };
         MouseDown+=delegate(object sender,MouseEventArgs e) { if(preview && e.Button==MouseButtons.Left) { Native.ReleaseCapture(); Native.SendMessage(Handle,0xA1,new IntPtr(2),IntPtr.Zero); } };
         timer.Interval=1000; timer.Tick+=delegate { Tick(); }; timer.Start();
         Shown+=delegate { UpdateTheme(true); Place(); Tick(); };
@@ -174,15 +203,48 @@ internal sealed class MonitorForm : Form
     {
         menu.ShowImageMargin=false;
         menu.Font=SystemFonts.MenuFont;
-        menu.Items.Add("查看读数和资源占用",null,delegate { ShowDetails(); });
-        menu.Items.Add("重新检测显卡",null,delegate { sensors.RefreshGpu(); });
-        menu.Items.Add("保存诊断报告",null,delegate { SaveStatus(); });
+        menu.Items.Add("打开黑皮win助手",null,delegate { if(SettingsRequested!=null) SettingsRequested(-1); });
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("向左微调 4 像素",null,delegate { settings.LeftOffset-=4; settings.Save(); Place(); });
-        menu.Items.Add("向右微调 4 像素",null,delegate { settings.LeftOffset+=4; settings.Save(); Place(); });
-        menu.Items.Add("重置位置",null,delegate { settings.LeftOffset=0; settings.Save(); detectedWeatherRight=-1; LocateWeather(); Place(); });
+        var widgetItem=new ToolStripMenuItem("显示任务栏监控");
+        widgetItem.Click+=delegate { settings.WidgetVisible=!settings.WidgetVisible; settings.Save(); Place(); };
+        var inputItem=new ToolStripMenuItem("启用英文输入锁");
+        inputItem.Click+=delegate { if(InputLockEnabled!=null && InputLockToggled!=null) InputLockToggled(!InputLockEnabled()); };
+        menu.Items.Add(widgetItem); menu.Items.Add(inputItem);
+        menu.ShowCheckMargin=false;
+        menu.Renderer=new AssistantMenuRenderer();
+        menu.Opening+=delegate { widgetItem.Checked=settings.WidgetVisible; inputItem.Enabled=InputLockEnabled!=null; inputItem.Checked=InputLockEnabled!=null && InputLockEnabled(); };
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("退出",null,delegate { if(ExitRequested!=null) ExitRequested(); });
+        menu.Items.Add("退出黑皮win助手",null,delegate { if(ExitRequested!=null) ExitRequested(); });
+        // Explorer hosting can reset DPI awareness. Size the actual popup after its
+        // native handle exists; pixel fonts keep row and text units identical.
+        menu.Opened+=delegate { ConfigureMenuLayout(); };
+    }
+    internal void ConfigureMenuLayout()
+    {
+        float dpi=Math.Max(96,Native.GetDpiForWindow(menu.Handle))/96f;
+        // Follow the Windows menu font; scale once into popup pixels.
+        Font systemFont=SystemFonts.MenuFont;
+        float fontPixels=systemFont.SizeInPoints*96f/72f*dpi;
+        Font previous=null;
+        if(menuFont==null || Math.Abs(menuFont.Size-fontPixels)>0.01f || menuFont.Name!=systemFont.Name) {
+            previous=menuFont;
+            menuFont=new Font(systemFont.FontFamily,fontPixels,systemFont.Style,GraphicsUnit.Pixel);
+        }
+        menu.SuspendLayout(); menu.AutoSize=false; menu.Font=menuFont;
+        int pad=(int)Math.Ceiling(4*dpi),left=(int)Math.Ceiling(24*dpi),right=(int)Math.Ceiling(10*dpi);
+        int textWidth=0;
+        foreach(ToolStripItem item in menu.Items) if(item is ToolStripMenuItem)
+            textWidth=Math.Max(textWidth,TextRenderer.MeasureText(item.Text,menuFont).Width);
+        int width=textWidth+left+right+pad*2,height=pad*2;
+        menu.Padding=new Padding(pad);
+        foreach(ToolStripItem item in menu.Items) {
+            item.AutoSize=false; item.Margin=Padding.Empty; item.Font=menuFont;
+            item.Padding=new Padding(left,0,right,0);
+            int row=item is ToolStripSeparator?(int)Math.Ceiling(6*dpi):Math.Max((int)Math.Ceiling(28*dpi),TextRenderer.MeasureText(item.Text,menuFont).Height+(int)Math.Ceiling(6*dpi));
+            item.Size=new Size(width-pad*2,row); height+=row;
+        }
+        menu.Size=new Size(width,height); menu.ResumeLayout(true);
+        if(previous!=null) previous.Dispose();
     }
     private void UpdateTheme(bool force)
     {
@@ -230,6 +292,7 @@ internal sealed class MonitorForm : Form
     }
     private void Place()
     {
+        if(!settings.WidgetVisible && !preview) { if(Visible) Hide(); return; }
         if(preview)
         {
             float previewScale=Math.Max(1,Native.GetDpiForWindow(Handle)/96f);
@@ -268,6 +331,7 @@ internal sealed class MonitorForm : Form
         }
     }
     private int WidgetWidth { get { return columns==3?252:168; } }
+    internal void RefreshPlacement() { Place(); }
     private static string Format(double? value,string unit) { return value.HasValue?Math.Round(value.Value).ToString("0")+unit:"—"; }
     private void Tick()
     {
@@ -285,7 +349,7 @@ internal sealed class MonitorForm : Form
         if(hasGpu) hint+="\nGPU："+Format(reading.GpuTemp,"°C")+"　"+reading.GpuSensor;
         if(!string.IsNullOrEmpty(reading.Error)) hint+="\n"+reading.Error;
         tooltip.SetToolTip(this,hint);
-        string trayText="CPU "+Format(reading.Cpu,"%")+" RAM "+Format(reading.Memory,"%")+"\nCPU "+Format(reading.CpuTemp,"°C")+" SSD "+Format(reading.DiskTemp,"°C");
+        string trayText="黑皮win助手\nCPU "+Format(reading.Cpu,"%")+" RAM "+Format(reading.Memory,"%")+"\nCPU "+Format(reading.CpuTemp,"°C")+" SSD "+Format(reading.DiskTemp,"°C");
         if(hasGpu) trayText+=" GPU "+Format(reading.GpuTemp,"°C");
         tray.Text=trayText.Length>63?trayText.Substring(0,63):trayText;
         if(ticks==3) { SaveStatus(); if(Program.CapturePreview) using(Bitmap image=new Bitmap(Width,Height)) { DrawToBitmap(image,new Rectangle(0,0,Width,Height)); image.Save(Path.Combine(Program.Home,"widget-preview.png"),System.Drawing.Imaging.ImageFormat.Png); } }
@@ -334,7 +398,7 @@ internal sealed class MonitorForm : Form
     }
     protected override void Dispose(bool disposing)
     {
-        if(disposing) { SystemEvents.UserPreferenceChanged-=PreferencesChanged; timer.Dispose(); tray.Visible=false; tray.Dispose(); if(appIcon!=null) appIcon.Dispose(); tooltip.Dispose(); menu.Dispose(); if(labelFont!=null) labelFont.Dispose(); if(valueFont!=null) valueFont.Dispose(); }
+        if(disposing) { SystemEvents.UserPreferenceChanged-=PreferencesChanged; timer.Dispose(); tray.Visible=false; tray.Dispose(); if(appIcon!=null) appIcon.Dispose(); tooltip.Dispose(); menu.Dispose(); if(menuFont!=null) menuFont.Dispose(); if(labelFont!=null) labelFont.Dispose(); if(valueFont!=null) valueFont.Dispose(); }
         base.Dispose(disposing);
     }
 }
