@@ -23,9 +23,9 @@ if (-not $InnoCompiler -or -not (Test-Path $InnoCompiler)) { throw 'Pass -InnoCo
 & $InnoCompiler "/DStageDir=$stage" "/DOutputDirPath=$dist" (Join-Path $PSScriptRoot 'installer\TaskbarMonitor.iss')
 if($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
 $portableFiles=Get-ChildItem -LiteralPath $stage | Where-Object Name -ne 'startup-registration.json' | Select-Object -ExpandProperty FullName
-$portable=Join-Path $dist 'ZCWinAssistant-1.1.0-Portable-x64.zip'
+$portable=Join-Path $dist 'ZCWinAssistant-1.1.1-Portable-x64.zip'
 Compress-Archive -LiteralPath $portableFiles -DestinationPath $portable -Force
-$releaseFiles=Get-Item (Join-Path $dist 'ZCWinAssistant-1.1.0-Setup-x64.exe'),$portable
+$releaseFiles=Get-Item (Join-Path $dist 'ZCWinAssistant-1.1.1-Setup-x64.exe'),$portable
 $lines=$releaseFiles | ForEach-Object { (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()+'  '+$_.Name }
 $lines | Set-Content -Encoding ascii (Join-Path $dist 'SHA256SUMS.txt')
 $releaseFiles + (Get-Item (Join-Path $dist 'SHA256SUMS.txt')) | Select-Object Name,Length

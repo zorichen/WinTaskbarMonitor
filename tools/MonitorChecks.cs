@@ -49,14 +49,14 @@ internal static class MonitorChecks
                 }
                 return 0;
             }
-            if(args.Contains("--context-preview")) {
+            if(args.Contains("--context-preview") || args.Contains("--attached-context")) {
                 string folder=System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"context-preview");
                 System.IO.Directory.CreateDirectory(folder);
                 Environment.SetEnvironmentVariable("ENGLISH_INPUT_LOCK_DATA",System.IO.Path.Combine(folder,"input"));
                 Program.QuitSignal=new EventWaitHandle(false,EventResetMode.AutoReset);
                 System.IO.File.WriteAllText(System.IO.Path.Combine(folder,"show.request"),DateTime.UtcNow.ToString("o"));
                 using(var sensors=new SensorService(1000,5000))
-                using(var context=new MonitorContext(sensors,new Settings(),true,System.IO.Path.Combine(folder,"show.request"),folder)) Application.Run(context);
+                using(var context=new MonitorContext(sensors,new Settings(),!args.Contains("--attached-context"),System.IO.Path.Combine(folder,"show.request"),folder)) Application.Run(context);
                 return 0;
             }
             if(args.Contains("--assistant-preview")) {

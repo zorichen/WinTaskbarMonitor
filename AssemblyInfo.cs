@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.Versioning;
 [assembly: TargetFramework(".NETFramework,Version=v4.7.2")]
 [assembly: AssemblyTitle("黑皮win助手")]
@@ -6,6 +6,6 @@ using System.Runtime.Versioning;
 [assembly: AssemblyCompany("ZoriChen")]
 [assembly: AssemblyProduct("黑皮win助手")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 ZoriChen")]
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
-[assembly: AssemblyInformationalVersion("1.1.0")]
+[assembly: AssemblyVersion("1.1.1.0")]
+[assembly: AssemblyFileVersion("1.1.1.0")]
+[assembly: AssemblyInformationalVersion("1.1.1")]

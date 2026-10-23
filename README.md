@@ -14,7 +14,9 @@ GitHub 项目名：**ZCWinAssistant**（原 WinTaskbarMonitor）。
 - 设置窗口默认 **960×680**、最小 **860×600**、最大 **1200×860**，均为 96 DPI 逻辑像素的窗口外框尺寸；按当前显示器 DPI 换算，同时限制在工作区内并留 24 逻辑像素余量。屏幕不足时工作区优先，页内提供滚动。列表可滚动，路径列可水平滚动。
 - 内部 EXE、安装身份与数据目录保持兼容名称，不需要改游戏存档、画质或全局输入法。
 
-当前版本为 1.1.0，提供安装包与便携包。下方旧截图用于说明任务栏监控样式，统一设置窗口和英文输入锁见功能说明。
+当前版本为 1.1.1，提供安装包与便携包。下方旧截图用于说明任务栏监控样式，统一设置窗口和英文输入锁见功能说明。
+
+1.1.1 修复桌面快捷方式无法唤起设置的问题，使用同用户、同会话的命名事件通知运行实例并激活窗口；登录启动继续在后台运行两项功能。
 
 详情见 [整合与尺寸约定](docs/2026-10-23-heipi-assistant.md)。
 
@@ -40,8 +42,8 @@ CPU  50°C   GPU  50°C   硬盘  50°C
 
 从 [Releases](https://github.com/zorichen/ZCWinAssistant/releases/latest) 下载：
 
-- **ZCWinAssistant-1.1.0-Setup-x64.exe**：安装版，包含开始菜单入口、可选桌面快捷方式、登录自启动选项和卸载程序。
-- **ZCWinAssistant-1.1.0-Portable-x64.zip**：便携版，解压后运行 `TaskbarMonitorStartup.exe --show` 打开设置，或运行 `TaskbarMonitor.exe` 后从托盘打开。运行数据仍存放在用户的 LocalAppData 目录。
+- **ZCWinAssistant-1.1.1-Setup-x64.exe**：安装版，包含开始菜单入口、可选桌面快捷方式、登录自启动选项和卸载程序。
+- **ZCWinAssistant-1.1.1-Portable-x64.zip**：便携版，解压后运行 `TaskbarMonitorStartup.exe --show` 打开设置，或运行 `TaskbarMonitor.exe` 后从托盘打开。运行数据仍存放在用户的 LocalAppData 目录。
 - **SHA256SUMS.txt**：下载文件的 SHA256 校验值。
 
 系统要求：Windows 11 x64、.NET Framework 4.7.2 或更新版本。初版针对主屏底部、图标居中的任务栏；副屏、垂直任务栏和第三方任务栏替换软件尚未验证。

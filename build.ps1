@@ -32,7 +32,7 @@ $startupArguments = @('/nologo','/target:winexe','/platform:x64','/optimize+','/
     ('/win32manifest:'+(Join-Path $project 'startup\app.manifest')),('/win32icon:'+$icon),
     ('/out:'+(Join-Path $output 'TaskbarMonitorStartup.exe')), '/reference:System.dll',
     '/reference:System.Core.dll','/reference:System.Web.Extensions.dll','/reference:Microsoft.CSharp.dll',
-    (Join-Path $project 'AssemblyInfo.cs'),(Join-Path $project 'startup\TaskbarMonitorStartup.cs'))
+    (Join-Path $project 'AssemblyInfo.cs'),(Join-Path $project 'AssistantActivation.cs'),(Join-Path $project 'startup\TaskbarMonitorStartup.cs'))
 & (Join-Path $framework 'csc.exe') @startupArguments
 if($LASTEXITCODE -ne 0) { throw 'Startup launcher build failed.' }
 Write-Output (Join-Path $output 'TaskbarMonitor.exe')

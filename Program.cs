@@ -37,7 +37,8 @@ internal static class Program
     internal static readonly string Home=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"TaskbarMonitor");
     internal static bool CapturePreview;
     internal static EventWaitHandle QuitSignal;
-    internal static readonly string ShowRequest=Path.Combine(Home,"show-assistant.request");
+    internal static EventWaitHandle ShowSignal;
+    internal static bool InitialShow;
     [STAThread] private static void Main(string[] args)
     {
         try
@@ -50,15 +51,17 @@ internal static class Program
             Application.SetCompatibleTextRenderingDefault(false);
             if(args.Contains("--quit")) { try { using(var signal=EventWaitHandle.OpenExisting("Local\\ZoriTaskbarMonitorQuit")) signal.Set(); } catch(WaitHandleCannotBeOpenedException) {} return; }
             if(args.Contains("--diagnose")) { Diagnose(); return; }
-            if(args.Contains("--show")) File.WriteAllText(ShowRequest,DateTime.UtcNow.ToString("o"));
+            InitialShow=args.Contains("--show");
             bool created;
             using(Mutex mutex=new Mutex(true,"Local\\ZoriTaskbarMonitor",out created))
             {
-                if(!created) return;
+                if(!created) { if(InitialShow) AssistantActivation.Signal(5000); return; }
                 QuitSignal=new EventWaitHandle(false,EventResetMode.AutoReset,"Local\\ZoriTaskbarMonitorQuit");
+                ShowSignal=AssistantActivation.Create();
                 using(SensorService sensors=new SensorService(Settings.Load().LoadIntervalMs,Settings.Load().TemperatureIntervalMs))
                     Application.Run(new MonitorContext(sensors,Settings.Load(),args.Contains("--preview")));
                 QuitSignal.Dispose();
+                ShowSignal.Dispose();
             }
         }
         catch(Exception ex)
@@ -103,10 +106,11 @@ internal sealed class MonitorContext : ApplicationContext
     private readonly System.Windows.Forms.Timer watcher=new System.Windows.Forms.Timer();
     private int runtimeTicks;
     private string lastShowRequest="",showError="";
+    private int showCount;
     private readonly string showRequestPath,runtimeRoot;
     internal MonitorContext(SensorService sensors,Settings settings,bool preview,string testShowPath=null,string testRuntimeRoot=null)
     {
-        showRequestPath=testShowPath??Program.ShowRequest; runtimeRoot=testRuntimeRoot??Program.Home;
+        showRequestPath=testShowPath; runtimeRoot=testRuntimeRoot??Program.Home;
         this.sensors=sensors; this.settings=settings; this.preview=preview;
         assistant=new AssistantForm(sensors,settings);
         assistant.ExitRequested+=delegate { ExitThread(); };
@@ -115,15 +119,23 @@ internal sealed class MonitorContext : ApplicationContext
         watcher.Interval=1000;
         watcher.Tick+=delegate {
             if(Program.QuitSignal.WaitOne(0)) { ExitThread(); return; }
-            try {
-                string request=File.ReadAllText(showRequestPath);
-                if(request!=lastShowRequest) { assistant.ShowMain(-1); lastShowRequest=request; showError=""; }
-            } catch(FileNotFoundException) {} catch(DirectoryNotFoundException) {} catch(Exception ex) { showError=ex.ToString(); }
+            string request=null;
+            // File requests are used only by isolated test contexts.
+            if(showRequestPath!=null) {
+                try { request=File.ReadAllText(showRequestPath); }
+                catch(FileNotFoundException) {} catch(DirectoryNotFoundException) {} catch(Exception ex) { showError=ex.ToString(); }
+            }
+            bool show=Program.InitialShow || (Program.ShowSignal!=null && Program.ShowSignal.WaitOne(0)) || (request!=null && request!=lastShowRequest);
+            Program.InitialShow=false;
+            if(show) {
+                try { assistant.ShowMain(-1); lastShowRequest=request; showCount++; showError=""; }
+                catch(Exception ex) { showError=ex.ToString(); }
+            }
             if(form.IsDisposed || !form.IsHandleCreated || !Native.IsWindow(form.Handle)) { if(!form.IsDisposed) form.Dispose(); CreateForm(); }
             if(++runtimeTicks%5==0) {
                 try {
                     var r=sensors.Snapshot();
-                    var record=new { TimeUtc=DateTime.UtcNow.ToString("o"), ProcessId=Process.GetCurrentProcess().Id, IsAdmin=Program.Admin, r.Cpu,r.CpuTemp,r.GpuLoad,r.GpuTemp,r.Memory,r.DiskTemp,r.CpuSensor,r.DiskSensor,r.Error,InputStatus=assistant.InputStatus,InputEnabled=assistant.InputEnabled,InputFile=EnglishInputLock.Store.FileName,WidgetVisible=settings.WidgetVisible,SettingsVisible=assistant.Visible,ShowError=showError,ShowRequestPath=showRequestPath };
+                    var record=new { TimeUtc=DateTime.UtcNow.ToString("o"), ProcessId=Process.GetCurrentProcess().Id, IsAdmin=Program.Admin, r.Cpu,r.CpuTemp,r.GpuLoad,r.GpuTemp,r.Memory,r.DiskTemp,r.CpuSensor,r.DiskSensor,r.Error,InputStatus=assistant.InputStatus,InputEnabled=assistant.InputEnabled,InputFile=EnglishInputLock.Store.FileName,WidgetVisible=settings.WidgetVisible,SettingsVisible=assistant.Visible,ShowError=showError,ShowRequestsHandled=showCount };
                     File.WriteAllText(Path.Combine(runtimeRoot,"assistant-runtime.json"),new JavaScriptSerializer().Serialize(record));
                 } catch(Exception ex) { try { File.WriteAllText(Path.Combine(runtimeRoot,"assistant-runtime-error.txt"),ex.ToString()); } catch {} }
             }

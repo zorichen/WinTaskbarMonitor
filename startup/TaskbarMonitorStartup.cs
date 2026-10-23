@@ -166,11 +166,7 @@ internal static class StartupProgram
 
     private static void Launch(bool show)
     {
-        if(show) {
-            string home=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"TaskbarMonitor");
-            Directory.CreateDirectory(home);
-            File.WriteAllText(Path.Combine(home,"show-assistant.request"),DateTime.UtcNow.ToString("o"));
-        }
+        if(show && AssistantActivation.Signal(0)) return;
         StartupRegistration registration = ReadRegistration();
         if (registration == null) {
             if(show) { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(MonitorPath,"--show") { UseShellExecute=true }); return; }
@@ -183,6 +179,7 @@ internal static class StartupProgram
         if (task == null) throw new InvalidOperationException("The startup task is missing. Re-run the installer to repair it.");
         CheckTask(task);
         task.Run(null);
+        if(show && !AssistantActivation.Signal(10000)) throw new IOException("The assistant did not become ready to open settings.");
     }
 
     private static void Log(string message)

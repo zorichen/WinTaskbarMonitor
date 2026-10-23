@@ -14,7 +14,7 @@ internal sealed class AssistantForm : Form
     readonly Settings settings;
     readonly Panel sidebar=new Panel(),viewport=new Panel(),monitor=new Panel(),general=new Panel();
     readonly EnglishInputLock.InputPanel input=new EnglishInputLock.InputPanel();
-    readonly Label brand=Ui.Label("黑皮win助手",13,true),tagline=Ui.Label("让 Windows 更顺手",9),version=Ui.Label("本机工具箱   ·   1.1.0",9),heading=Ui.Label("硬件监控",23,true),description=Ui.Label("",10);
+    readonly Label brand=Ui.Label("黑皮win助手",13,true),tagline=Ui.Label("让 Windows 更顺手",9),version=Ui.Label("本机工具箱   ·   1.1.1",9),heading=Ui.Label("硬件监控",23,true),description=Ui.Label("",10);
     readonly ActionButton[] nav=new ActionButton[3];
     readonly MetricCard[] metrics={new MetricCard("CPU"),new MetricCard("GPU"),new MetricCard("内存"),new MetricCard("硬盘")};
     readonly SettingsCard widget=new SettingsCard(),position=new SettingsCard(),sensorCard=new SettingsCard(),startupCard=new SettingsCard(),behavior=new SettingsCard(),about=new SettingsCard();
@@ -62,7 +62,7 @@ internal sealed class AssistantForm : Form
         startupSwitch.Checked=StartupEnabled(); startupSwitch.CheckedChanged+=SetStartup;
         var hide=new ActionButton("收起到托盘",delegate { Hide(); });
         MakeSetting(behavior,"后台运行","关闭设置窗口后，两项功能继续工作。",hide,116);
-        var aboutTitle=Ui.Label("黑皮win助手",14,true); var aboutText=Ui.Label("版本 1.1.0\n硬件监控与英文输入锁，集中在一个地方。",10); aboutText.ForeColor=Ui.Muted;
+        var aboutTitle=Ui.Label("黑皮win助手",14,true); var aboutText=Ui.Label("版本 1.1.1\n硬件监控与英文输入锁，集中在一个地方。",10); aboutText.ForeColor=Ui.Muted;
         var quit=new ActionButton("退出助手",delegate { if(ExitRequested!=null) ExitRequested(); });
         about.Controls.Add(aboutTitle); about.Controls.Add(aboutText); about.Controls.Add(quit);
         about.Resize+=delegate { double w=about.ClientSize.Width*96.0/about.DeviceDpi; Ui.Put(aboutTitle,about,20,16,w-40,28); Ui.Put(aboutText,about,20,50,w-40,58); Ui.Put(quit,about,20,126,110,32); };
@@ -116,7 +116,7 @@ internal sealed class AssistantForm : Form
         sensorText.Text=r.CpuSensor+Environment.NewLine+r.DiskSensor+Environment.NewLine+string.Join(Environment.NewLine,r.Gpus.Select(g=>g.Name+"   "+Format(g.Load,"%")+" / "+Format(g.Temperature,"°C")))+(string.IsNullOrEmpty(r.Error)?"":Environment.NewLine+r.Error);
         using(var p=Process.GetCurrentProcess()) runtime.Text="正在运行  ·  内存 "+(p.WorkingSet64/1048576.0).ToString("F0")+" MB";
     }
-    internal void ShowMain(int page) { updating=true; startupSwitch.Checked=StartupEnabled(); widgetSwitch.Checked=settings.WidgetVisible; updating=false; if(page>=0) SelectPage(page); Show(); WindowState=FormWindowState.Normal; Activate(); }
+    internal void ShowMain(int page) { updating=true; startupSwitch.Checked=StartupEnabled(); widgetSwitch.Checked=settings.WidgetVisible; updating=false; if(page>=0) SelectPage(page); Show(); WindowState=FormWindowState.Normal; BringToFront(); Activate(); }
     static bool StartupEnabled() {
         try { var r=new JavaScriptSerializer().Deserialize<System.Collections.Generic.Dictionary<string,object>>(File.ReadAllText(Path.Combine(Program.AppDirectory,"startup-registration.json"))); return File.Exists((string)r["ShortcutPath"]); } catch { return false; }
     }
